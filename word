@@ -1,0 +1,101 @@
+# Exercise 6
+
+# Khai báo mảng
+.data
+array: .word  1,211,11,1,-20000
+size: .word 5
+max_product_hi: .word 0
+max_product_lo: .word 0
+error: .asciiz "Vui long nhap mang co nhieu hon 1 phan tu"
+
+.text
+main:
+
+	
+  # Load địa chỉ của mảng và kích thước của nó vào thanh ghi $s0 và $s1
+  	li $t5, 0 		# index = i = 0
+  	la $s0, array		# Đưa mảng vào thanh ghi $s0
+  	lw $s1, size		# Đưa kích thước của mảng vào thành ghi $s1
+  	
+  # Nếu mảng có 1 phần tử thì printf_error và thoát
+     	slti $s4,$s1,2
+     	beq $s4,1,error_array
+
+  	addi $s1, $s1, -1   	# Giảm kích thước đi 1 để tránh truy cập vượt quá giới hạn
+  
+  # Thiết lập con trỏ $t0 để trỏ đến phần tử đầu tiên của mảng
+  	move $t0, $s0
+	
+  # Thiết lập thanh ghi $t1 để lưu tích lớn nhất hiện tại
+  	li $t1, -2147483647
+  	
+	
+  # Bắt đầu vòng lặp để tìm tích lớn nhất
+  	loop:
+    	  # Nếu con trỏ $t0 trỏ tới phần tử cuối cùng của mảng, thoát khỏi vòng lặp
+    		beq $t5, $s1, end_loop	# Nếu i=n thì thoát vòng lặp
+
+    	  # Lấy giá trị của phần tử hiện tại và phần tử kế tiếp trong mảng
+    		lw $t2, 0($t0)
+    		lw $t3, 4($t0)
+
+    	  # Tính tích của 2 phần tử và lưu vào thanh ghi $t4
+   		mult $t2, $t3	# Giá trị sau khi nhân sẽ được đẩy vào thành ghi $lo
+   		mfhi $t7	# Truyền giá trị thanh ghi $hi vào thành ghi $t7
+    		mflo $t4	# Truyền giá trị thanh ghi $lo vào thành ghi $t4
+
+    	  # So sánh tích với giá trị hiện tại của tích lớn nhất
+    		slt $t6, $t4, $t1
+    		beq $t6,$zero, update_max_product
+
+    	  # Nếu tích không lớn hơn giá trị hiện tại của tích lớn nhất, tiếp tục vòng lặp
+    		addi $t0, $t0, 4	# Đi tới phần tử kế tiếp trong mảng
+    		addi $t5,$t5,1		# i++
+    		j loop
+
+  	  # Cập nhật giá trị của tích lớn nhất và đưa vòng lặp về phần tử kế tiếp
+  	update_max_product:
+    		add $t1, $t4,$zero
+    		sw $t4, max_product_lo
+		sw $t7, max_product_hi
+    		addi $t0, $t0, 4	# Đi tới phần tử kế tiếp trong mảng
+    		addi $t5,$t5,1		# i++
+    		
+    		addi $s2,$t5,0		# Cập nhập vị trí của phần tử đầu tiên trong cặp phần tử có tích lớn nhất
+    		addi $s3,$s2,1		# Cập nhập vị trí của phần tử thứ 2 trong cặp phần tử có tích lớn nhất
+    		j loop
+
+  	  # Kết thúc vòng lặp và in giá trị tích lớn nhất
+  	end_loop:
+  		lw $a0, max_product_hi		# Đặt giá trị max_product_hi vào $a0
+    		li $v0, 1			# Đặt mã hệ thống 1 vào $v0
+    		syscall
+    		lw $a0, max_product_lo		# Đặt giá trị max_product_lo vào $a0
+    		li $v0, 1			# Đặt mã hệ thống 1 vào $v0
+    		syscall
+    		
+    		
+    		li $a0, 10        		# Đặt giá trị ASCII của dấu xuống dòng vào $a0
+    		li $v0, 11        		# Đặt mã hệ thống 11 vào $v0
+    		syscall           		# Gọi hướng dẫn syscall
+    		
+    		add $a0,$zero,$s2		# Đặt vị trí thứ i vào $a0
+    		li $v0, 1			# Đặt mã hệ thống 1 vào $v0
+    		syscall
+ 
+       		li $a0, 10        		# Đặt giá trị ASCII của dấu xuống dòng vào $a0   		
+    		li $v0, 11        		# Đặt mã hệ thống 11 vào $v0
+    		syscall           		# Gọi hướng dẫn syscall
+    		
+    		add $a0,$zero,$s3		# Đặt vị trí thứ i+1 vào $a0
+    		li $v0, 1			# Đặt mã hệ thống 1 vào $v0
+    		syscall
+    		j end_of_product
+    		
+error_array:
+		li $v0, 4
+		la $a0, error
+ 		syscall
+		j end_of_product
+end_of_product:
+    # Kết thúc chương trình
